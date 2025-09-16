@@ -1,0 +1,97 @@
+<div style="display:none">{{cloze:Text}}</div>
+<div id="rawText" style="display:none">{{Text}}</div>
+<div id="inlineQ" class="cloze-q"></div>
+
+<style>
+.cloze-q{font-size:22px;line-height:1.45;text-align:center;margin:8px 0 16px;}
+.fix{white-space:pre-wrap;}
+.inline-gap{
+  font-size:22px;padding:2px 6px;border:1px solid #e5e7eb;border-radius:10px;
+  text-align:center;outline:none;margin:0 2px;width:auto;min-width:0;box-sizing:content-box;
+}
+.inline-gap:focus{box-shadow:0 0 0 3px rgba(59,130,246,.25);}
+.input-meter{position:absolute;visibility:hidden;white-space:pre;font:inherit;letter-spacing:inherit;}
+</style>
+
+<script>
+(function(){
+  const raw = (document.getElementById('rawText')?.textContent)||'';
+  const host = document.getElementById('inlineQ'); if(!raw||!host) return;
+
+  const RE=/\{\{c(\d+)::([\s\S]*?)(?:::(.*?))?\}\}/g;
+  function esc(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  function norm(s){return (s||'').normalize('NFC').toLowerCase().replace(/\s+/g,' ').trim();}
+  function hash(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=(h*16777619)>>>0;}return h.toString(16);}
+  const KEY='clozeMulti_'+hash(raw);
+  let saved={}; try{ saved=JSON.parse(sessionStorage.getItem(KEY)||'{}'); }catch(_){}
+
+  function partsFromHint(ans,hint){
+    hint=hint||'';
+    const visLen=hint.replace(/_/g,'').length;
+    const hiddenTotal=Math.max(0, ans.length-visLen);
+    const parts=[]; let run='',i=0,underscores=0;
+    while(i<hint.length){
+      if(hint[i]==='_'){
+        if(run){parts.push({type:'fix',text:run});run='';}
+        let j=i; while(j<hint.length&&hint[j]==='_') j++;
+        const len=j-i; underscores+=len; parts.push({type:'gap',len}); i=j; continue;
+      }
+      run+=hint[i++]; 
+    }
+    if(run){parts.push({type:'fix',text:run});}
+    if(underscores===0){ if(hiddenTotal>0) parts.push({type:'gap',len:hiddenTotal}); return parts; }
+    const delta=hiddenTotal-underscores;
+    if(delta>0){ for(let k=parts.length-1;k>=0;k--){ if(parts[k].type==='gap'){ parts[k].len+=delta; break; } } }
+    return parts;
+  }
+
+  let gIdx=-1;
+  const html = raw.replace(RE, (_m,n,ans,hint)=>{
+    gIdx++;
+    const parts=partsFromHint(ans,hint);
+    let pIdx=-1, out='';
+    parts.forEach(p=>{
+      if(p.type==='fix'){ out+=`<span class="fix">${esc(p.text)}</span>`; }
+      else{
+        pIdx++; const key=`${gIdx}-${pIdx}`;
+        const val=saved[key]||''; const max=p.len;
+        out+=`<input class="inline-gap" data-g="${gIdx}" data-p="${pIdx}" maxlength="${max}" placeholder="${'_'.repeat(max)}" value="${esc(val)}">`;
+      }
+    });
+    return out;
+  });
+
+  host.innerHTML=html;
+
+  // линейка для измерения ширины
+  const meter=document.createElement('span'); meter.className='input-meter'; document.body.appendChild(meter);
+  function autosize(inp){
+    meter.textContent=(inp.value||inp.placeholder||'').replace(/ /g,'\u00a0');
+    const w=meter.offsetWidth+12; // запас под паддинги/рамку
+    inp.style.width=Math.max(14,w)+'px';
+  }
+
+  host.querySelectorAll('input.inline-gap').forEach(inp=>{
+    inp.autocapitalize='off'; inp.autocorrect='off'; inp.spellcheck=false;
+
+    const onInput=()=>{
+      const v=norm(inp.value);
+      if(inp.value!==v){
+        const s=inp.selectionStart,e=inp.selectionEnd; inp.value=v; try{inp.setSelectionRange(s,e);}catch(_){}
+      }
+      const key=`${inp.dataset.g}-${inp.dataset.p}`;
+      saved[key]=inp.value;
+      try{ sessionStorage.setItem(KEY, JSON.stringify(saved)); }catch(_){}
+      autosize(inp);
+    };
+
+    autosize(inp);
+    inp.addEventListener('input', onInput, {passive:true});
+    inp.addEventListener('change', onInput);
+    setTimeout(()=>autosize(inp),0);
+  });
+
+  // фокус на первый инпут
+  const first=host.querySelector('input.inline-gap'); if(first) first.focus();
+})();
+</script>

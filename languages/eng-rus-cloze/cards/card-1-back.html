@@ -1,0 +1,93 @@
+
+<!-- обязателен для Cloze -->
+<div style="display:none">{{cloze:Text}}</div>
+
+<!-- сырой текст -->
+<div id="rawText" style="display:none">{{Text}}</div>
+
+<!-- сюда выведем правильный текст + подсветку по введённому -->
+<div id="inlineA" class="cloze-a"></div>
+
+<div class="ipa-row">
+  <span class="play play-big">{{tts en_US:FullText}}</span>
+</div> <br/>
+{{#Back Extra}}
+<details class="notes">
+  <summary>Заметки</summary>
+  <div class="notes-text">{{Back Extra}}</div>
+</details>
+{{/Back Extra}}
+
+<style>
+.cloze-a{font-size:22px; line-height:1.45; text-align:center; margin:8px 0 16px;}
+.ok   { background:rgba(34,197,94,.12); border-bottom:2px solid #22c55e; }
+.bad  { background:rgba(239,68,68,.12); border-bottom:2px solid #ef4444; }
+.typed{ font-size:80%; color:#6b7280; margin-left:6px; }
+</style>
+
+<script>
+(function(){
+  const rawNode = document.getElementById('rawText');
+  const host = document.getElementById('inlineA'); if(!rawNode || !host) return;
+  const raw = rawNode.textContent || '';
+
+  function esc(s){
+    return (s||'').replace(/[&<>"']/g, function(m){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];
+    });
+  }
+  function norm(s){ return (s||'').normalize('NFC').toLowerCase().replace(/\s+/g,' ').trim(); }
+  function hash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){h^=s.charCodeAt(i); h=(h*16777619)>>>0;} return h.toString(16); }
+  const KEY='clozeMulti_'+hash(raw);
+
+  let saved={}; try{ saved=JSON.parse(sessionStorage.getItem(KEY)||'{}'); }catch(_){}
+
+  const RE=/\{\{c(\d+)::([\s\S]*?)(?:::(.*?))?\}\}/g;
+
+  function partsFromHint(ans,hint){
+    const visLen=(hint||'').replace(/_/g,'').length;
+    const hiddenTotal=Math.max(0, ans.length - visLen);
+    const parts=[]; let run='', i=0, underscores=0;
+    hint = hint || '';
+    while(i<hint.length){
+      if(hint[i]==='_'){
+        if(run){parts.push({type:'fix',text:run}); run='';}
+        let j=i; while(j<hint.length && hint[j]==='_') j++;
+        const len=j-i; underscores+=len; parts.push({type:'gap',len});
+        i=j; continue;
+      }
+      run+=hint[i++];
+    }
+    if(run){parts.push({type:'fix',text:run});}
+    if(underscores===0){
+      if(hiddenTotal>0) parts.push({type:'gap',len:hiddenTotal});
+      return parts;
+    }
+    const delta = hiddenTotal - underscores;
+    if (delta>0){
+      for(let k=parts.length-1;k>=0;k--){
+        if(parts[k].type==='gap'){ parts[k].len += delta; break; }
+      }
+    }
+    return parts;
+  }
+
+  let gIdx=-1;
+  const html = raw.replace(RE, function(_m,n,ans,hint){
+    gIdx++;
+    const parts = partsFromHint(ans,hint);
+    let pIdx=-1, typedFull='';
+    parts.forEach(function(p){
+      if(p.type==='fix'){ typedFull += p.text; }
+      else { pIdx++; const key=`${gIdx}-${pIdx}`; typedFull += (saved[key]||''); }
+    });
+    const ok = norm(typedFull)===norm(ans);
+    const corr = '<span class="'+(ok?'ok':'bad')+'">'+esc(ans)+'</span>';
+    return ok ? corr : corr+'<span class="typed">('+esc(typedFull)+')</span>';
+  });
+
+  host.innerHTML = html;
+ try { sessionStorage.removeItem(KEY); } catch (_) {}
+})();
+</script>
+
