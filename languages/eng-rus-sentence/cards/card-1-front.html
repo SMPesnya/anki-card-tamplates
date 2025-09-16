@@ -1,0 +1,44 @@
+<div class="src">{{Source}}</div>
+
+<div class="prompt">Введите перевод:</div>
+<input id="sentInput" class="sent-input" type="text"
+       autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+
+<div id="tgt" style="display:none">{{Target}}</div>
+<div id="src" style="display:none">{{Source}}</div>
+
+<style>
+.card{display:flex;flex-direction:column;align-items:center}
+.src{font-size:22px;line-height:1.45;text-align:center;margin:10px 0 16px}
+.prompt{font-size:18px;margin:6px 0}
+.sent-input{
+  width:min(900px,92vw);max-width:900px;
+  font-size:20px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:12px;
+  outline:none;text-align:left
+}
+.sent-input:focus{box-shadow:0 0 0 3px rgba(59,130,246,.25)}
+
+</style>
+
+<script>
+(function(){
+  const src = (document.getElementById('src')?.textContent)||'';
+  const tgt = (document.getElementById('tgt')?.textContent)||'';
+  const input = document.getElementById('sentInput'); if(!input) return;
+
+  function hash(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=(h*16777619)>>>0;}return h.toString(16)}
+  const KEY = 'sentJS_'+hash(src+'|'+tgt);
+
+  // ничего не нормализуем при вводе — просто сохраняем как есть
+  function save(){ try{ sessionStorage.setItem(KEY, JSON.stringify({raw: input.value})) }catch(_){} }
+
+  try{
+    const saved = JSON.parse(sessionStorage.getItem(KEY)||'{}');
+    if(saved && typeof saved.raw==='string') input.value = saved.raw;
+  }catch(_){}
+
+  input.addEventListener('input', save, {passive:true});
+  input.addEventListener('change', save);
+})();
+</script>
+
