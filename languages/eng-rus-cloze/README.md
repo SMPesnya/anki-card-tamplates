@@ -7,7 +7,8 @@
 │   ├── card-1-back.html # Шаблон оборота
 │   ├── card-1.css # Таблица стилей
 │   └── card-1-front.html # Шаблон лица
-├── fields.txt # Поля в карточке
+├── fields.md # Поля в карточке
 └── README.md # Этот файл
 ```
+[fields.md](./fields.md)
 
