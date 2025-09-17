@@ -1,0 +1,44 @@
+<!-- 
+     Шаблон №1
+-->
+
+<div class="image-center image-random">
+  {{Image}}
+</div>
+
+<div class="word">{{Word}}</div>
+
+<div class="ipa-row">
+  {{#IPA}}<span class="ipa">[{{IPA}}]</span>{{/IPA}}
+  <span class="play">{{tts en_US:Word}}</span>
+</div>
+<details class="notes">
+  <summary>Заметки</summary>
+  <div class="notes-text"></div>
+</details>
+
+<script>
+(function () {
+  function pickRandomImage() {
+    // если на карточке несколько таких контейнеров — обработаем все
+    document.querySelectorAll('.image-random').forEach(container => {
+      const imgs = container.querySelectorAll('img');
+      if (imgs.length > 1) {
+        imgs.forEach(img => img.style.display = 'none');
+        imgs[Math.floor(Math.random() * imgs.length)].style.display = 'block';
+      }
+    });
+  }
+
+  // если DOM уже готов — запускаем сразу; иначе ждём
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', pickRandomImage);
+  } else {
+    pickRandomImage();
+  }
+
+  // на всякий случай — ещё один тик после рендеринга
+  setTimeout(pickRandomImage, 0);
+})();
+</script>
+

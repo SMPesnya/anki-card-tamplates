@@ -1,0 +1,65 @@
+<!-- На лицевой стороне слово на аглийском, нужно ввести правильно перевод на русском -->
+<div class="mode-translation-big">
+  <div class="translation">{{Word}}</div>
+</div>
+
+<div class="prompt">Переведите слово:</div>
+<div class="type">{{type:Translation}}</div>
+
+<details class="notes" >
+  <summary>Заметки</summary>
+  <div class="notes-text"></div>
+</details>
+<script>
+(function () {
+  
+   // Нормализация: нижний регистр + схлопывание пробелов + trim
+  function normalize(s){
+    return (s || "")
+      .normalize("NFC")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function __init(){
+    const el = document.getElementById("typeans");
+    // На лицевой стороне это INPUT; на обороте #typeans — уже разметка ответа.
+    if (!el || el.tagName.toLowerCase() !== "input") return;
+
+    // Отключим автокапс и автокоррект на мобилках
+    el.setAttribute("autocapitalize", "off");
+    el.setAttribute("autocorrect", "off");
+    el.setAttribute("spellcheck", "false");
+
+    const update = () => {
+      const v = normalize(el.value);
+      if (el.value !== v) {
+        const start = el.selectionStart, end = el.selectionEnd;
+        el.value = v;
+        try { el.setSelectionRange(start, end); } catch (_) { /* ok */ }
+      }
+    };
+
+    el.addEventListener("input", update, { passive: true });
+    el.addEventListener("change", update);
+    // на всякий случай — привести сразу после рендера
+    setTimeout(update, 0);
+  }
+	
+  function init(){
+    __init();
+  }
+
+  // если DOM уже готов — запускаем сразу; иначе ждём
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // на всякий случай — ещё один тик после рендеринга
+  setTimeout(init, 0);
+})();
+</script>
+

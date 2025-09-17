@@ -1,0 +1,98 @@
+<div class="prompt">Выберите правильное слово:</div>
+
+<!-- data-count — сколько дистракторов -->
+<div id="mc"
+     data-word="{{Word}}"
+     data-opts="{{AutoOptions}}"
+     data-count="{{#MCCount}}{{MCCount}}{{/MCCount}}">
+</div>
+
+<div class="after">
+  <div class="ipa">{{#IPA}}[{{IPA}}]{{/IPA}}</div>
+  <div class="tr">{{Translation}}</div>
+</div>
+
+<style>
+:root{
+  --mc-green:#22c55e; --mc-red:#ef4444;
+  --mc-bg:#f8fafc; --mc-fg:#111827; --mc-border:#e5e7eb; --mc-hover:rgba(0,0,0,.04);
+}
+.prompt{font-size:28px;margin:12px 0 18px;text-align:center;}
+
+</style>
+
+<script>
+(async function(){
+  const host = document.getElementById('mc'); if(!host) return;
+  const WORD = (host.dataset.word||'').trim(); if(!WORD) return;
+
+  // сколько дистракторов
+  let COUNT = parseInt(host.dataset.count,10);
+  if(!Number.isFinite(COUNT) || COUNT<1) COUNT = 3;
+
+  // кандидаты из AutoOptions
+  let opts = (host.dataset.opts||'').split(/[;,|]/).map(s=>s.trim()).filter(Boolean);
+
+  // при необходимости — добираем из wordpool.txt
+  async function loadPool(){
+    try{ const r=await fetch('wordpool.txt'); if(!r.ok) return []; return (await r.text()).split(/\r?\n/).map(s=>s.trim()).filter(Boolean); }
+    catch{ return []; }
+  }
+  function sim(a,b){
+    a=a.toLowerCase(); b=b.toLowerCase();
+    const grams=s=>new Set(Array.from({length:Math.max(0,s.length-1)},(_,i)=>s.slice(i,i+2)));
+    const A=grams(a),B=grams(b); let inter=0; for(const g of A) if(B.has(g)) inter++;
+    const j=(A.size||B.size)? inter/(A.size+B.size-inter):0;
+    const len=1-Math.min(1,Math.abs(a.length-b.length)/Math.max(a.length,b.length,1));
+    return j*0.7+len*0.3;
+  }
+  function typos(n){
+    const out=new Set(), ab='abcdefghijklmnopqrstuvwxyz';
+    while(out.size<n){
+      let s=WORD.split(''), i=Math.floor(Math.random()*WORD.length);
+      if(Math.random()<0.5 && WORD.length>3){ const j=Math.min(WORD.length-1,i+1); [s[i],s[j]]=[s[j],s[i]]; }
+      else{ s[i]=ab[Math.floor(Math.random()*ab.length)]; }
+      const v=s.join(''); if(v.toLowerCase()!==WORD.toLowerCase()) out.add(v);
+    }
+    return [...out];
+  }
+
+  // собрать варианты
+  opts = Array.from(new Set(opts.filter(x=>x.toLowerCase()!==WORD.toLowerCase())));
+  if(opts.length<COUNT){
+    const pool=(await loadPool()).filter(w=>w.toLowerCase()!==WORD.toLowerCase());
+    if(pool.length){
+      const top=pool.map(w=>({w,s:sim(w,WORD)})).sort((a,b)=>b.s-a.s).slice(0,30);
+      while(opts.length<COUNT && top.length){
+        const i=Math.floor(Math.random()*top.length);
+        const p=top.splice(i,1)[0].w;
+        if(!opts.includes(p)) opts.push(p);
+      }
+    }
+  }
+  if(opts.length<COUNT) opts.push(...typos(COUNT-opts.length));
+  opts = opts.slice(0,COUNT);
+
+  const options=[WORD, ...opts];
+  for(let i=options.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [options[i],options[j]]=[options[j],options[i]]; }
+
+  // рендер (без автооценок, одинаково на ПК и мобиле)
+  const after = document.querySelector('.after');
+  options.forEach(txt=>{
+    const b=document.createElement('button');
+    b.className='mc-btn'; b.textContent=txt; b.dataset.v=txt;
+    b.onclick=()=>{
+      host.querySelectorAll('.mc-btn').forEach(x=>x.disabled=true);
+      if(txt===WORD){ b.classList.add('correct'); }
+      else{
+        b.classList.add('wrong');
+        host.querySelectorAll('.mc-btn').forEach(x=>{ if(x.dataset.v===WORD) x.classList.add('correct'); });
+      }
+      after?.classList.add('show');
+      // дальше вручную выбираешь оценку — поведение полностью одинаковое на всех платформах
+    };
+    host.appendChild(b);
+  });
+})();
+</script>
+

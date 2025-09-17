@@ -1,0 +1,63 @@
+<div class="image-wrap image-random">
+  {{Image}}
+</div>
+
+<div class="typed">{{type:Word}}</div>
+
+<!-- Якорь для задержки из поля MCDelay (мс). Если пусто — 10 000 -->
+<div id="type-auto" data-delay=""></div>
+
+<div class="ipa-row">
+  {{#IPA}}<span class="ipa">[{{IPA}}]</span>{{/IPA}}
+  <span class="play">{{tts en_US:Word}}</span>
+</div>
+
+<details class="notes">
+  <summary>Заметки</summary>
+  <div class="notes-text"></div>
+</details>
+
+<script>
+(function () {
+  function pickRandomImage() {
+    // если на карточке несколько таких контейнеров — обработаем все
+    document.querySelectorAll('.image-random').forEach(container => {
+      const imgs = container.querySelectorAll('img');
+      if (imgs.length > 1) {
+        imgs.forEach(img => img.style.display = 'none');
+        imgs[Math.floor(Math.random() * imgs.length)].style.display = 'block';
+      }
+    });
+  }
+
+  // если DOM уже готов — запускаем сразу; иначе ждём
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', pickRandomImage);
+  } else {
+    pickRandomImage();
+  }
+
+  // на всякий случай — ещё один тик после рендеринга
+  setTimeout(pickRandomImage, 0);
+})();
+</script>
+ 
+
+
+
+<style>
+.typed-delay-hint{
+  margin-top:10px;
+  text-align:center;
+  font-size:14px;
+  color:#6b7280;
+}
+</style>
+
+
+ 
+ 
+ 
+ 
+ 
+

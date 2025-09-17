@@ -1,0 +1,31 @@
+<div class="typed">{{type:Translation}}</div>
+
+<!-- Якорь для задержки из поля MCDelay (мс). Если пусто — 10 000 -->
+<div id="type-auto" data-delay=""></div>
+
+
+<script>
+(function () {
+  function pickRandomImage() {
+    // если на карточке несколько таких контейнеров — обработаем все
+    document.querySelectorAll('.image-random').forEach(container => {
+      const imgs = container.querySelectorAll('img');
+      if (imgs.length > 1) {
+        imgs.forEach(img => img.style.display = 'none');
+        imgs[Math.floor(Math.random() * imgs.length)].style.display = 'block';
+      }
+    });
+  }
+
+  // если DOM уже готов — запускаем сразу; иначе ждём
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', pickRandomImage);
+  } else {
+    pickRandomImage();
+  }
+
+  // на всякий случай — ещё один тик после рендеринга
+  setTimeout(pickRandomImage, 0);
+})();
+</script>
+ 

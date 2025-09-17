@@ -1,0 +1,28 @@
+<div class="typed">{{type:Word}}</div>
+
+<div class="ipa-row">
+  {{#IPA}}<span class="ipa">[{{IPA}}]</span>{{/IPA}}
+  <span class="play">{{tts en_US:Word}}</span>
+</div>
+
+<div class="mode-translation-big">
+  <div class="translation">{{Translation}}</div>
+</div>
+
+<details class="notes">
+  <summary>Заметки</summary>
+  <div class="notes-text"></div>
+</details>
+
+ 
+ <!-- Якорь для задержки из поля MCDelay (мс). Если пусто — 10 000 -->
+<div id="type-auto" data-delay=""></div>
+
+<style>
+.typed-delay-hint{
+  margin-top:10px;
+  text-align:center;
+  font-size:14px;
+  color:#6b7280;
+}
+</style>
